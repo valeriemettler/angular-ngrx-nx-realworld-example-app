@@ -1,15 +1,16 @@
-import { ArticleComment, ArticleData } from './+state/article.interfaces';
+import { ArticleData, ArticleComment } from '@angular-ngrx-nx-realworld-example-app/api';
 import { User } from '@angular-ngrx-nx-realworld-example-app/auth';
 import * as fromAuth from '@angular-ngrx-nx-realworld-example-app/auth';
-import { Field } from '@angular-ngrx-nx-realworld-example-app/ngrx-forms';
 import * as fromNgrxForms from '@angular-ngrx-nx-realworld-example-app/ngrx-forms';
+import { Field } from '@angular-ngrx-nx-realworld-example-app/ngrx-forms';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { select, Store } from '@ngrx/store';
 import { Observable, Subject } from 'rxjs';
 import { filter, takeUntil, withLatestFrom } from 'rxjs/operators';
 
-import * as fromArticle from './+state/article.reducer';
 import * as fromActions from './+state/article.actions';
+import * as fromArticle from './+state/article.reducer';
+import { ArticleFacade } from './+state/article.facade';
 
 const structure: Field[] = [
   {
@@ -39,11 +40,11 @@ export class ArticleComponent implements OnInit, OnDestroy {
   currentUser$: Observable<User>;
   touchedForm$: Observable<boolean>;
 
-  constructor(private store: Store<any>) {}
+  constructor(private store: Store<any>, private facade: ArticleFacade) {}
 
   ngOnInit() {
-    this.article$ = this.store.select(fromArticle.getArticle);
-    this.comments$ = this.store.select(fromArticle.getComments);
+    this.article$ = this.facade.article$;
+    this.comments$ = this.facade.comments$;
     this.isAuthenticated$ = this.store.select(fromAuth.getLoggedIn);
     this.currentUser$ = this.store.select(fromAuth.getUser);
     this.data$ = this.store.select(fromNgrxForms.getData);
@@ -61,33 +62,33 @@ export class ArticleComponent implements OnInit, OnDestroy {
   }
 
   follow(username: string) {
-    this.store.dispatch(new fromActions.Follow(username));
+    this.facade.follow(username);
   }
   unfollow(username: string) {
-    this.store.dispatch(new fromActions.UnFollow(username));
+    this.facade.unfollow(username);
   }
   favorite(slug: string) {
-    this.store.dispatch(new fromActions.Favorite(slug));
+    this.facade.favorite(slug);
   }
   unfavorite(slug: string) {
-    this.store.dispatch(new fromActions.UnFavorite(slug));
+    this.facade.unfavorite(slug);
   }
   delete(slug: string) {
-    this.store.dispatch(new fromActions.DeleteArticle(slug));
+    this.facade.delete(slug);
   }
   deleteComment(data: { commentId: number; slug: string }) {
-    this.store.dispatch(new fromActions.DeleteComment(data));
+    this.facade.deleteComment(data);
+  }
+  submit(slug: string) {
+    this.facade.submit(slug);
   }
   updateForm(changes: any) {
     this.store.dispatch({ type: '[ngrxForms] UPDATE_DATA', payload: changes });
-  }
-  submit(slug: string) {
-    this.store.dispatch(new fromActions.AddComment(slug));
   }
 
   ngOnDestroy() {
     this.unsubscribe$.next();
     this.unsubscribe$.complete();
-    this.store.dispatch(new fromActions.InitializeArticle());
+    this.facade.initializeArticle();
   }
 }
